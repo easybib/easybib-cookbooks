@@ -22,6 +22,7 @@ describe 'haproxy::configure' do
             :http_match_path => '/some-random-path/there.html',
             :http_set_path => '/some-random-path/here.html',
             :http_set_host => 'set.host.tld',
+            :http_strip_redirect_location => '/otherdomain.tld',
             :haproxy_check_interval => '60000',
             :servers => {
               'second-app-www1' => 'second.app1.tld',
@@ -51,7 +52,7 @@ describe 'haproxy::configure' do
       )
 
       expect(chef_run).to render_file('/etc/haproxy/haproxy.cfg').with_content(
-        'reqirep ^([^\ ]*)\ /some-random-path/there.html\ (.*)$ \1\ /some-random-path/here.html\ \2'
+        'reqirep ^([^\ ]*)\ /some-random-path/there.html(.*)$ \1\ /some-random-path/here.html\2'
       )
 
     end
@@ -59,6 +60,13 @@ describe 'haproxy::configure' do
 
       expect(chef_run).to render_file('/etc/haproxy/haproxy.cfg').with_content(
         'http-request set-header Host set.host.tld'
+      )
+
+    end
+    it 'Configures haproxy with redirect location stripping' do
+
+      expect(chef_run).to render_file('/etc/haproxy/haproxy.cfg').with_content(
+        'rspirep ^Location:\ /otherdomain.tld(.*)$ Location:\ \1  if response_is_app2_redirect'
       )
 
     end

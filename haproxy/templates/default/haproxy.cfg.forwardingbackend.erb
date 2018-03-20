@@ -37,9 +37,14 @@ backend <%= @layername %>_forward
   http-request del-header Authorization
   <% end -%>
   <%if !@http_set_path.nil? && !@http_match_path.nil? -%>
-  # this is for 1.5
-  reqirep ^([^\ ]*)\ <%= @http_match_path %>\ (.*)$ \1\ <%= @http_set_path %>\ \2
-  # this is for 1.6 and above: http-request set-path <%= @http_set_path %>
+  # this is for haproxy 1.6 and above: http-request set-path <%= @http_set_path %>
+  # this is for haproxy 1.5
+  reqirep ^([^\ ]*)\ <%= @http_match_path %>(.*)$ \1\ <%= @http_set_path %>\2
+  <% end -%>
+  <%if !@http_strip_redirect_location.nil? -%>
+  # this is to make sure any 30x's get rematched back to the hostname we are proxy from
+  acl response_is_<%= @layername %>_redirect res.hdr(Location) -m found
+  rspirep ^Location:\ <%= @http_strip_redirect_location %>(.*)$ Location:\ \1  if response_is_<%= @layername %>_redirect
   <% end -%>
   option httpchk <%= health_check_string %>
   <% @servers.each do |name,host| -%>
